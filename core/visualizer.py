@@ -73,7 +73,7 @@ class DataVisualizer:
         self.helper_plot('heatmap', "Missing Values Heatmap", file_path, data=self.df.isnull(), cbar=False, yticklabels=False)
 
     def plot_correlation_heatmap(self, file_path):
-        self.helper_plot('heatmap', "Correlation Heatmap", file_path, data=self.df.corr(), annot=True)
+        self.helper_plot('heatmap', "Correlation Heatmap", file_path, data=self.df.corr(numeric_only=True), annot=True)
 
     def plot_value_counts(self, col, file_path):
         self.helper_plot('countplot', f"Value Counts for {col}", file_path, col=col)

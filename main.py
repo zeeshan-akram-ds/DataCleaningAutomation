@@ -1,12 +1,20 @@
-from core.utils import get_numeric_columns, get_categorical_columns
-import pandas as pd
+from core.analyzer import DataAnalyzer
+from core.recommender import RecommendationEngine
+from core.visualizer import DataVisualizer
+from core.cleaner import DataCleaner
+from core.utils import load_file
 
-# Synthetic DataFrame
-df = pd.DataFrame({
-    'Age': [25, 30, 22],
-    'Salary': [50000, 60000, 55000],
-    'Department': ['HR', 'IT', 'Marketing']
-})
-
-print("Numeric columns:", get_numeric_columns(df))
-print("Categorical columns:", get_categorical_columns(df))
+df = load_file('data/titanicdataset.csv')
+if df is None:
+    raise TypeError("Error")
+da = DataAnalyzer(df)
+report = da.generate_report()
+re = RecommendationEngine(report)
+# print(re.generate_suggestions())
+dc = DataCleaner(df)
+#
+dc.handle_missing(col_name='Age', strategy='median', fill_value=None).remove_duplicates()
+#
+dv = DataVisualizer(df)
+dv.plot_correlation_heatmap(file_path='outputs/plots/correlation.png')
+dc.save_cleaned('outputs/cleaned_data.csv')
