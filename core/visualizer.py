@@ -8,7 +8,7 @@ class DataVisualizer:
     def __init__(self, df):
         self.df = df
 
-    def helper_plot(self, plot_type, title, file_path, diag='hist', data=None, col=None, cbar=True, yticklabels=True, annot=False, color=None, subset=None):
+    def helper_plot(self, plot_type, title, file_path, diag='hist', data=None, col=None, cbar=True, yticklabels=True, annot=False, color=None):
         """
         Generic helper to generate and save different Seaborn plots.
 
@@ -20,8 +20,8 @@ class DataVisualizer:
             Title for the plot.
         file_path : str
             Path to save the generated plot image.
-        data : data
-            data for heatmap graph
+        data : pd.DataFrame, optional
+            The dataset to visualize (required for 'heatmap' and 'pairplot').
         col : str, optional
             Column name (required for 'countplot').
         cbar, yticklabels, annot, color : various, optional
@@ -49,10 +49,7 @@ class DataVisualizer:
                 raise ValueError("Column name must be provided for boxplot.")
             sns.boxplot(x=self.df[col], color=color)
         else:
-            if subset is None:
-                sns.pairplot(self.df.select_dtypes(include='number'), diag_kind=diag)
-            else:
-                sns.pairplot(self.df[subset].select_dtypes(include='number'), diag_kind=diag)
+            sns.pairplot(data, diag_kind=diag)
 
         plt.title(title)
         plt.tight_layout()
@@ -107,5 +104,5 @@ class DataVisualizer:
             plot_type='pairplot',
             title="PairPlot of Numeric Columns",
             file_path=file_path,
-            subset=subset
+            data=numeric_cols
         )
