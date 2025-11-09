@@ -1,6 +1,7 @@
 # core/utils.py
 import pandas as pd
 import os
+import json
 
 def load_file(file_path):
     """
@@ -47,3 +48,29 @@ def get_categorical_columns(df):
     Return a list of categorical column names (object or category) from the DataFrame.
     """
     return df.select_dtypes(include=['object', 'category']).columns.tolist()
+
+
+def save_json_report(report_dict, file_path):
+    """
+    Save a Python dictionary as a JSON file.
+
+    Parameters
+    ----------
+    report_dict : dict
+        The report dictionary to save.
+    file_path : str
+        Path to the JSON file to create.
+    """
+    try:
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        with open(file_path, 'w') as f:
+            json.dump(report_dict, f, indent=4)
+        print(f"Report saved successfully at {file_path}")
+
+    except (OSError, IOError) as e:
+        print(f"Error saving JSON file: {e}")
+
+    except Exception as e:
+        print(f"Unexpected error: {e}")
