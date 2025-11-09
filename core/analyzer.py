@@ -1,5 +1,5 @@
 import pandas as pd
-
+from core.utils import get_numeric_columns, get_categorical_columns
 
 class DataAnalyzer:
     def __init__(self, df):
@@ -44,7 +44,8 @@ class DataAnalyzer:
         Returns summary statistics for numeric columns:
         mean, median, std, skew, and kurtosis.
         """
-        numeric_data = self.df.select_dtypes(include='number')
+        numeric_cols = get_numeric_columns(self.df)
+        numeric_data = self.df[numeric_cols]
 
         # compute statistics
         stats = {
@@ -67,7 +68,8 @@ class DataAnalyzer:
         - freq: frequency of the most frequent value
         """
         # select categorical columns
-        categorical_data = self.df.select_dtypes(include=['object', 'category'])
+        categorical_cols = get_categorical_columns(self.df)
+        categorical_data = self.df[categorical_cols]
 
         # prepare summary dicts
         summary = {'nunique': [], 'mode': [], 'freq': []}

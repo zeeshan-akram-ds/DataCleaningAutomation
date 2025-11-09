@@ -90,12 +90,13 @@ class DataVisualizer:
         )
 
     def pairplot_numeric(self, file_path, subset=None):
-
-        numeric_cols = (
-            self.df[subset].select_dtypes(include='number')
-            if subset is not None
-            else self.df.select_dtypes(include='number')
-        )
+        if subset is not None:
+            missing_cols = [col for col in subset if col not in self.df.columns]
+            if missing_cols:
+                raise ValueError(f"These columns are not in the DataFrame: {missing_cols}")
+            numeric_cols = self.df[subset].select_dtypes(include='number')
+        else:
+            numeric_cols = self.df.select_dtypes(include='number')
 
         if numeric_cols.shape[1] < 2:
             raise ValueError("Need at least two numeric columns to create a pairplot.")
