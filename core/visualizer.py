@@ -13,7 +13,7 @@ class DataVisualizer:
         Parameters
         ----------
         plot_type : str
-            Type of plot to generate ('heatmap' or 'countplot').
+            Type of plot to generate ('heatmap', 'countplot' or 'boxplot').
         title : str
             Title for the plot.
         file_path : str
@@ -28,7 +28,7 @@ class DataVisualizer:
         # Ensure output directory exists
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-        allowed_plots = ['heatmap', 'countplot']
+        allowed_plots = ['heatmap', 'countplot', 'boxplot']
         if plot_type not in allowed_plots:
             raise ValueError(f"Invalid plot type. Choose from {allowed_plots}.")
 
@@ -42,6 +42,10 @@ class DataVisualizer:
             if col is None:
                 raise ValueError("Column name must be provided for countplot.")
             sns.countplot(x=self.df[col], color=color)
+        elif plot_type == 'boxplot':
+            if col is None:
+                raise ValueError("Column name must be provided for boxplot.")
+            sns.boxplot(x=self.df[col], color=color)
 
         plt.title(title)
         plt.tight_layout()
@@ -70,4 +74,13 @@ class DataVisualizer:
     def plot_value_counts(self, col, file_path):
         self.helper_plot('countplot', f"Value Counts for {col}", file_path, col=col)
 
-
+    def plot_outliers(self, col, file_path):
+        if col not in self.df.select_dtypes(include='number').columns.to_list():
+            raise TypeError("column must be of numeric data type.")
+        self.helper_plot(
+            plot_type='boxplot',
+            title=f"Outlier Distribution - {col}",
+            file_path=file_path,
+            col=col,
+            color='skyblue'
+        )
