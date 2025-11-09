@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -6,14 +8,14 @@ class DataVisualizer:
     def __init__(self, df):
         self.df = df
 
-    def helper_plot(self, plot_type, title, file_path, data=None, col=None, cbar=True, yticklabels=True, annot=False, color=None):
+    def helper_plot(self, plot_type, title, file_path, diag='hist', data=None, col=None, cbar=True, yticklabels=True, annot=False, color=None, subset=None):
         """
         Generic helper to generate and save different Seaborn plots.
 
         Parameters
         ----------
         plot_type : str
-            Type of plot to generate ('heatmap', 'countplot' or 'boxplot').
+            Type of plot to generate ('heatmap', 'countplot', 'boxplot'. 'pairplot').
         title : str
             Title for the plot.
         file_path : str
@@ -28,7 +30,7 @@ class DataVisualizer:
         # Ensure output directory exists
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-        allowed_plots = ['heatmap', 'countplot', 'boxplot']
+        allowed_plots = ['heatmap', 'countplot', 'boxplot', 'pairplot']
         if plot_type not in allowed_plots:
             raise ValueError(f"Invalid plot type. Choose from {allowed_plots}.")
 
@@ -46,6 +48,11 @@ class DataVisualizer:
             if col is None:
                 raise ValueError("Column name must be provided for boxplot.")
             sns.boxplot(x=self.df[col], color=color)
+        else:
+            if subset is None:
+                sns.pairplot(self.df.select_dtypes(include='number'), diag_kind=diag)
+            else:
+                sns.pairplot(self.df[subset].select_dtypes(include='number'), diag_kind=diag)
 
         plt.title(title)
         plt.tight_layout()
@@ -83,4 +90,22 @@ class DataVisualizer:
             file_path=file_path,
             col=col,
             color='skyblue'
+        )
+
+    def pairplot_numeric(self, file_path, subset=None):
+
+        numeric_cols = (
+            self.df[subset].select_dtypes(include='number')
+            if subset is not None
+            else self.df.select_dtypes(include='number')
+        )
+
+        if numeric_cols.shape[1] < 2:
+            raise ValueError("Need at least two numeric columns to create a pairplot.")
+
+        self.helper_plot(
+            plot_type='pairplot',
+            title="PairPlot of Numeric Columns",
+            file_path=file_path,
+            subset=subset
         )

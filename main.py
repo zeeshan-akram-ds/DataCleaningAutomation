@@ -1,11 +1,18 @@
+from core.visualizer import DataVisualizer
 import pandas as pd
-from core.analyzer import DataAnalyzer
-# simple DataFrame
-df = pd.DataFrame({
-    'A': [1, 2, 3, 4, 5],
-    'B': [2, 4, 6, 8, 10],
-    'C': [5, 4, 3, 2, 1]
-})
 
-analyzer = DataAnalyzer(df)
-print(analyzer.generate_report())
+# --- Synthetic numeric dataset ---
+data = {
+    'Age': [22, 25, 47, 52, 46, 56, 23, 43, 36, 29],
+    'Salary': [25000, 30000, 47000, 52000, 48000, 58000, 26000, 49000, 41000, 31000],
+    'Experience': [1, 3, 10, 15, 12, 20, 2, 14, 9, 4]
+}
+
+df = pd.DataFrame(data)
+
+# --- Initialize your visualizer ---
+viz = DataVisualizer(df)
+
+# --- Test pairplot_numeric ---
+viz.pairplot_numeric(file_path="outputs/pairplot_numeric.png")
+print("Pairplot saved successfully at outputs/pairplot_numeric.png")
