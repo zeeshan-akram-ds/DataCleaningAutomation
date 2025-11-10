@@ -22,6 +22,11 @@ if uploaded_file is not None:
     else:
         # Update existing cleaner if a new file is uploaded
         st.session_state.cleaner.df = df
+    # Initialize DataVisualizer once
+    if 'visualizer' not in st.session_state:
+        st.session_state.visualizer = DataVisualizer(st.session_state.cleaner.df)
+    else:
+        st.session_state.visualizer.df = st.session_state.cleaner.df
 
     cleaner = st.session_state.cleaner
 
@@ -32,12 +37,59 @@ if uploaded_file is not None:
     # --- Generate and show full analysis report ---
     data_analyzer = DataAnalyzer(cleaner.df)
     report = data_analyzer.generate_report()
-    display_report(report)
 
     # --- Generate and show recommendations ---
     re = RecommendationEngine(report)
     suggestions = re.generate_suggestions()
-    display_recommendations(suggestions)
+
+    ## Tabs for tasks
+    report_tab, visualize_tab, download_tab = st.tabs(["Analysis Report", "Visualize Data", "Download Cleaned Data"])
+
+    with report_tab:
+        # report
+        display_report(report)
+
+        # suggestions
+        display_recommendations(suggestions)
+        # data preview
+
+    with visualize_tab:
+        st.subheader("Generate Visualizations")
+        plots_list = ["Correlation Heatmap", "Missing Value Heatmap", "Value Counts", "plot outliers", "pairplot"]
+        selected_plot = st.selectbox("Choose plot to generate", plots_list, key='plot_generation')
+        visualizer = st.session_state.visualizer
+
+        if selected_plot == 'Correlation Heatmap':
+            if st.button("Generate Heatmap", key='heatmap'):
+                visualizer.plot_correlation_heatmap(file_path='temp.png')
+                st.image("temp.png", use_column_width=True)
+        elif selected_plot == 'Missing Value Heatmap':
+            if st.button("Generate Missing Values Heatmap"):
+                visualizer.plot_missing_heatmap(file_path='temp.png')
+                st.image("temp.png", use_column_width=True)
+        elif selected_plot == 'Value Counts':
+            cat_cols = get_categorical_columns(st.session_state.cleaner.df)
+            selected_col = st.selectbox("select column to plot", cat_cols, key='column_selection')
+            if st.button("Generate Countplot"):
+                visualizer.plot_value_counts(selected_col, file_path='temp.png')
+                st.image('temp.png', use_column_width=True)
+        elif selected_plot == 'plot outliers':
+            numeric_cols = get_numeric_columns(st.session_state.cleaner.df)
+            selected_col = st.selectbox("select column to plot", numeric_cols, key='numeric_column_selection')
+            if st.button("Generate BoxPlot"):
+                visualizer.plot_outliers(selected_col, file_path='temp.png')
+                st.image('temp.png', use_column_width=True)
+        elif selected_plot == 'pairplot':
+            numeric_cols = get_numeric_columns(st.session_state.cleaner.df)
+            subset = st.multiselect("select columns for pairplot", numeric_cols, key='cols_for_pairplot', default=numeric_cols[0:2])
+            if len(subset) < 2:
+                st.error("Please select at least two columns to create a pairplot.")
+            else:
+                if st.button("Generate Pairplot"):
+                    visualizer.pairplot_numeric(file_path='temp.png', subset=subset)
+                    st.image('temp.png', use_column_width=True)
+        else:
+            print("Select from available plots.")
 
     # --- Sidebar cleaning operations ---
     st.sidebar.header("Data Cleaning Operations")
@@ -60,12 +112,11 @@ if uploaded_file is not None:
         try:
             cleaner.handle_missing(selected_column, selected_strategy, fill_value=fill_value)
             st.success(f"Applied {selected_strategy} strategy to '{selected_column}' successfully.")
+            # --- Show updated dataframe after cleaning ---
+            with st.expander("Updated Data Preview"):
+                st.dataframe(cleaner.df.head())
         except Exception as e:
             st.error(f"Error: {str(e)}")
-
-    # --- Show updated dataframe after cleaning ---
-    st.subheader("Updated Data Preview")
-    st.dataframe(cleaner.df.head())
 
     # --- Duplicate Removal ---
     st.sidebar.markdown("### Remove Duplicates")

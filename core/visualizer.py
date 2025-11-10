@@ -27,8 +27,11 @@ class DataVisualizer:
         cbar, yticklabels, annot, color : various, optional
             Plot customization parameters.
         """
-        # Ensure output directory exists
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        # # Ensure output directory exists
+        ## fixed dir error
+        dir_name = os.path.dirname(file_path)
+        if dir_name:  # only create if not empty
+            os.makedirs(dir_name, exist_ok=True)
 
         allowed_plots = ['heatmap', 'countplot', 'boxplot', 'pairplot']
         if plot_type not in allowed_plots:
