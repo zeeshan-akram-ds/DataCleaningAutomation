@@ -257,3 +257,11 @@ if uploaded_file is not None:
                 except Exception as e:
                     st.error(f"Error while scaling: {str(e)}")
 
+
+# Sidebar Footer
+st.sidebar.markdown("---")
+st.sidebar.markdown(
+    "<small>Data Analyzer v1.0<br>Built by Zeeshan Akram</small>",
+    unsafe_allow_html=True
+)
+
