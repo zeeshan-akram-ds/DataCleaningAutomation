@@ -5,6 +5,7 @@ from core.analyzer import DataAnalyzer
 from core.visualizer import DataVisualizer
 from core.cleaner import DataCleaner
 from core.recommender import RecommendationEngine
+import io
 
 
 st.set_page_config("Data Cleaning Assistance")
@@ -90,6 +91,38 @@ if uploaded_file is not None:
                     st.image('temp.png', use_column_width=True)
         else:
             print("Select from available plots.")
+
+    with download_tab:
+        st.subheader("Download Cleaned Data")
+
+        file_format = st.selectbox("Choose file format", ["CSV", "Excel"])
+
+        if file_format == "CSV":
+            # Create CSV data in memory
+            csv_data = st.session_state.cleaner.df.to_csv(index=False).encode('utf-8')
+
+            # Download button for CSV
+            st.download_button(
+                label="Download Cleaned CSV",
+                data=csv_data,
+                file_name="cleaned_data.csv",
+                mime="text/csv"
+            )
+
+        elif file_format == "Excel":
+            # Create Excel data in memory
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                st.session_state.cleaner.df.to_excel(writer, index=False, sheet_name='CleanedData')
+            excel_data = output.getvalue()
+
+            # Download button for Excel
+            st.download_button(
+                label="Download Cleaned Data",
+                data=excel_data,
+                file_name="cleaned_data.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
     # --- Sidebar cleaning operations ---
     st.sidebar.header("Data Cleaning Operations")
