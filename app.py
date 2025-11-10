@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from core.utils import load_file, display_report, display_recommendations
+from core.utils import load_file, display_report, display_recommendations, get_categorical_columns, get_numeric_columns
 from core.analyzer import DataAnalyzer
 from core.visualizer import DataVisualizer
 from core.cleaner import DataCleaner
@@ -44,11 +44,11 @@ if uploaded_file is not None:
 
     # --- Column selection ---
     columns = cleaner.df.columns.tolist()
-    selected_column = st.sidebar.selectbox("Select column for imputation", columns)
+    selected_column = st.sidebar.selectbox("Select column for Imputation", columns, key='missing_value_col_sel')
 
     # --- Strategy selection ---
     strategies = ['mean', 'median', 'mode', 'drop', 'constant']
-    selected_strategy = st.sidebar.selectbox("Select strategy", strategies)
+    selected_strategy = st.sidebar.selectbox("Select strategy", strategies, key='missing_strategy_sel')
 
     # --- Optional fill value input for 'constant' strategy ---
     fill_value = None
@@ -56,7 +56,7 @@ if uploaded_file is not None:
         fill_value = st.sidebar.text_input("Enter constant fill value")
 
     # --- Apply button ---
-    if st.sidebar.button("Apply Missing Value Fix"):
+    if st.sidebar.button("Apply Missing Value Fix", key='fill missing'):
         try:
             cleaner.handle_missing(selected_column, selected_strategy, fill_value=fill_value)
             st.success(f"Applied {selected_strategy} strategy to '{selected_column}' successfully.")
@@ -66,3 +66,110 @@ if uploaded_file is not None:
     # --- Show updated dataframe after cleaning ---
     st.subheader("Updated Data Preview")
     st.dataframe(cleaner.df.head())
+
+    # --- Duplicate Removal ---
+    st.sidebar.markdown("### Remove Duplicates")
+    if st.sidebar.button("Remove All Duplicates",key='remove duplicates'):
+        try:
+            before = len(st.session_state.cleaner.df)
+            st.session_state.cleaner.remove_duplicates()
+            after = len(st.session_state.cleaner.df)
+            removed = before - after
+            st.success(f"{removed} duplicate rows removed successfully!")
+        except Exception as e:
+            st.error(f"Error while removing duplicates: {str(e)}")
+
+    # --- Outlier Removal ---
+    st.sidebar.markdown("### Handle Outliers")
+
+    # Get numeric columns only
+    numeric_cols = get_numeric_columns(cleaner.df)
+
+    if not numeric_cols:
+        st.sidebar.warning("No numeric columns available for outlier handling.")
+    else:
+        selected_outlier_col = st.sidebar.selectbox("Select numeric column", numeric_cols, key='select_numeric_for_duplicate')
+        selected_method = st.sidebar.selectbox("Select outlier handling method", ['IQR', 'z_score'], key='outlier_handling')
+
+        if st.sidebar.button("Apply Outlier Removal",key='remove outliers'):
+            try:
+                before = len(st.session_state.cleaner.df)
+                st.session_state.cleaner.remove_outliers(selected_outlier_col, selected_method)
+                after = len(st.session_state.cleaner.df)
+                removed = before - after
+                st.success(
+                    f"Outliers removed from '{selected_outlier_col}' using {selected_method} method ({removed} rows affected).")
+            except Exception as e:
+                st.error(f"Error during outlier removal: {str(e)}")
+
+        # --- Encoding Section ---
+        st.sidebar.markdown("### Encode Categoricals")
+
+        categorical_columns = get_categorical_columns(st.session_state.cleaner.df)
+
+        if not categorical_columns:
+            st.sidebar.info("No categorical columns available for encoding.")
+        else:
+            selected_encoding_col = st.sidebar.selectbox(
+                "Select column to encode",
+                categorical_columns,
+                key="encode_col_select"
+            )
+
+            selected_encoding_method = st.sidebar.selectbox(
+                "Select encoding method",
+                ["OneHot", "LabelEncoding"],
+                key="encode_method_select"
+            )
+
+            if st.sidebar.button("Apply Encoding", key="apply_encoding_btn"):
+                try:
+                    before_cols = len(st.session_state.cleaner.df.columns)
+                    st.session_state.cleaner.encode_categoricals(selected_encoding_col, selected_encoding_method)
+                    after_cols = len(st.session_state.cleaner.df.columns)
+                    added_cols = after_cols - before_cols
+
+                    if selected_encoding_method.lower() == 'labelencoding':
+                        st.success(
+                            f"{selected_encoding_col} encoded successfully using Label Encoding (no new columns added).")
+                    else:
+                        st.success(
+                            f"{selected_encoding_col} encoded successfully using One-Hot Encoding — {added_cols} new columns added.")
+                    with st.expander("Preview Encoded Data (sample 5 rows)"):
+                        st.dataframe(st.session_state.cleaner.df.sample(5))
+                except Exception as e:
+                    st.error(f"Error while encoding '{selected_encoding_col}': {str(e)}")
+
+        # --- Scaling Section ---
+        st.sidebar.markdown("### Scale Numeric Features")
+
+        numeric_columns = get_numeric_columns(st.session_state.cleaner.df)
+
+        if not numeric_columns:
+            st.sidebar.info("No numeric columns available for scaling.")
+        else:
+            selected_numeric_cols = st.sidebar.multiselect(
+                "Select columns to scale",
+                numeric_columns,
+                key="scale_cols_multiselect"
+            )
+
+            selected_scaler = st.sidebar.selectbox(
+                "Select scaling method",
+                ["StandardScaler", "MinMaxScaler", "RobustScaler"],
+                key="scaling_method_select"
+            )
+
+            if st.sidebar.button("Apply Scaling", key="apply_scaling_btn"):
+                try:
+                    if selected_numeric_cols:
+                        st.session_state.cleaner.scale_features(selected_numeric_cols, selected_scaler)
+                        st.success(f"Columns {selected_numeric_cols} scaled successfully using {selected_scaler}.")
+
+                        with st.expander("Preview Scaled Data (sample 5 rows)"):
+                            st.dataframe(st.session_state.cleaner.df.sample(5))
+                    else:
+                        st.warning("Please select at least one numeric column to scale.")
+                except Exception as e:
+                    st.error(f"Error while scaling: {str(e)}")
+
