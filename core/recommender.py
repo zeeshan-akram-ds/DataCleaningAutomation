@@ -13,6 +13,15 @@ class RecommendationEngine:
         suggestions : list
             A list of textual recommendations for handling data issues.
         """
+
+        if not isinstance(self.report_dict, dict):
+            raise ValueError("Input 'report_dict' must be a dictionary.")
+
+        required_keys = ['missing_summary', 'duplicate_summary', 'categorical_summary', 'numeric_summary']
+        for key in required_keys:
+            if key not in self.report_dict:
+                raise ValueError(f"Missing expected key '{key}' in report dictionary.")
+
         suggestions = []
 
         missing_summary = self.report_dict.get('missing_summary', {})

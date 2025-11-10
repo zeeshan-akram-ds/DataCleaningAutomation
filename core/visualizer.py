@@ -3,57 +3,82 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+from core.cleaner import BaseValidator
 
-class DataVisualizer:
+class DataVisualizer(BaseValidator):
     def __init__(self, df):
         self.df = df
 
-    def helper_plot(self, plot_type, title, file_path, diag='hist', data=None, col=None, cbar=True, yticklabels=True, annot=False, color=None):
+    def helper_plot(
+            self,
+            plot_type,
+            title,
+            file_path,
+            diag='hist',
+            data=None,
+            col=None,
+            cbar=True,
+            yticklabels=True,
+            annot=False,
+            color=None
+    ):
         """
         Generic helper to generate and save different Seaborn plots.
 
         Parameters
         ----------
         plot_type : str
-            Type of plot to generate ('heatmap', 'countplot', 'boxplot'. 'pairplot').
+            Type of plot to generate ('heatmap', 'countplot', 'boxplot', 'pairplot').
         title : str
             Title for the plot.
         file_path : str
             Path to save the generated plot image.
+        diag : str, optional
+            Type of diagonal plot for pairplot ('hist' or 'kde'), by default 'hist'.
         data : pd.DataFrame, optional
             The dataset to visualize (required for 'heatmap' and 'pairplot').
         col : str, optional
-            Column name (required for 'countplot').
+            Column name (required for 'countplot' or 'boxplot').
         cbar, yticklabels, annot, color : various, optional
             Plot customization parameters.
         """
-        # # Ensure output directory exists
-        ## fixed dir error
+
+        # VALIDATIONS
+        self._validate_dataframe()
+        self._validate_plot_type(plot_type, ['heatmap', 'countplot', 'boxplot', 'pairplot'])
+
+        # Directory check
         dir_name = os.path.dirname(file_path)
-        if dir_name:  # only create if not empty
+        if dir_name:
             os.makedirs(dir_name, exist_ok=True)
 
-        allowed_plots = ['heatmap', 'countplot', 'boxplot', 'pairplot']
-        if plot_type not in allowed_plots:
-            raise ValueError(f"Invalid plot type. Choose from {allowed_plots}.")
-
+        # PLOT LOGIC
         plt.figure(figsize=(8, 5))
 
         if plot_type == 'heatmap':
-            if data is None:
-                raise ValueError("Data must not empty")
+            if data is None or data.empty:
+                raise ValueError("Data must not be empty for a heatmap.")
+            self._validate_numeric_dataframe(data)
             sns.heatmap(data, annot=annot, cbar=cbar, yticklabels=yticklabels)
+
         elif plot_type == 'countplot':
-            if col is None:
-                raise ValueError("Column name must be provided for countplot.")
+            self._validate_column_exists(col)
+            self._validate_categorical_column(col)
             sns.countplot(x=self.df[col], color=color)
+
         elif plot_type == 'boxplot':
-            if col is None:
-                raise ValueError("Column name must be provided for boxplot.")
+            self._validate_column_exists(col)
+            self._validate_numeric_column(col)
             sns.boxplot(x=self.df[col], color=color)
-        else:
+
+        else:  # pairplot
+            if data is None or data.empty:
+                raise ValueError("Data must not be empty for a pairplot.")
+            self._validate_numeric_dataframe(data)
+            self._validate_diag_kind(diag)
             sns.pairplot(data, diag_kind=diag)
 
+        # finally
         plt.title(title)
         plt.tight_layout()
         plt.savefig(file_path, dpi=300)
