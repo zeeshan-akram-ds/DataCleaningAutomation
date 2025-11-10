@@ -114,12 +114,12 @@ class DataCleaner(BaseValidator):
                 iqr = q3 - q1
                 lower_bound = q1 - 1.5 * iqr
                 upper_bound = q3 + 1.5 * iqr
-                self.df = self.df[(self.df[col_name] >= lower_bound) & (self.df[col_name] <= upper_bound)]
+                self.df.drop(self.df[(self.df[col_name] < lower_bound) | (self.df[col_name] > upper_bound)].index, inplace=True)
 
             elif method == 'z_score':
                 z_scores = (self.df[col_name] - self.df[col_name].mean()) / self.df[col_name].std()
                 abs_z = np.abs(z_scores)
-                self.df = self.df[abs_z < 3]
+                self.df.drop(self.df[np.abs(z_scores) >= 3].index, inplace=True)
 
             return self
 
